@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.4.0 - 2026-06-23
+
+### Changed
+- Improved admin Payload Preview presentation with a closable panel.
+- Added syntax-highlighted JSON rendering for payload preview output.
+- Aligned preview container styling with WordPress default metabox (`postbox`) framing.
+
 ## 0.3.0 - 2026-06-23
 
 ### Added

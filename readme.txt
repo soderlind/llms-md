@@ -4,7 +4,7 @@ Tags: ai, llms, markdown, seo, discovery
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 0.3.0
+Stable tag: 0.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -57,6 +57,11 @@ Run WordPress integration tests only when a WordPress test database/environment 
 * composer test:wp
 
 == Changelog ==
+
+= 0.4.0 =
+* Improved admin Payload Preview presentation with a closable panel.
+* Added syntax-highlighted JSON rendering for payload preview output.
+* Aligned preview container styling with WordPress default metabox framing.
 
 = 0.3.0 =
 * Added GitHub issue templates for bug reports and feature requests.
