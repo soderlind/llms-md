@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.3.0 - 2026-06-23
+
+### Added
+- GitHub issue templates for bug reports and feature requests.
+- GitHub issue config to disable blank issues.
+- Bundled Action Scheduler via Composer (`woocommerce/action-scheduler`).
+
+### Changed
+- Replaced WP-Cron-based regeneration scheduling with Action Scheduler (with safe fallback support).
+- Improved manual regeneration UX in the admin screen.
+- Added an indeterminate in-page progress bar shown during manual regeneration.
+
+### Fixed
+- Reduced delay before regeneration starts after manual trigger.
+
 ## 0.2.0 - 2026-06-23
 
 ### Changed
