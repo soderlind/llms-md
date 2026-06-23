@@ -4,7 +4,7 @@ Tags: ai, llms, markdown, seo, discovery
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 0.2.0
+Stable tag: 0.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -57,6 +57,14 @@ Run WordPress integration tests only when a WordPress test database/environment 
 * composer test:wp
 
 == Changelog ==
+
+= 0.3.0 =
+* Added GitHub issue templates for bug reports and feature requests.
+* Disabled blank GitHub issues.
+* Replaced WP-Cron-based regeneration scheduling with Action Scheduler.
+* Added bundled Action Scheduler dependency via Composer.
+* Improved manual regeneration UX with an in-page progress indicator.
+* Reduced startup delay for manual regeneration.
 
 = 0.2.0 =
 * Updated installation instructions in README.md and readme.txt.

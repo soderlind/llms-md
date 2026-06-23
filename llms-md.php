@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       llms.md
  * Description:       Serves /llms.md from cached AI-generated site analysis.
- * Version:           0.2.0
+ * Version:           0.3.0
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Plugin URI:        https://github.com/soderlind/llms-md
@@ -22,6 +22,11 @@ if (is_readable($llms_md_autoload)) {
     require_once $llms_md_autoload;
 }
 
+$llms_md_as = __DIR__ . '/vendor/woocommerce/action-scheduler/action-scheduler.php';
+if (is_readable($llms_md_as)) {
+    require_once $llms_md_as;
+}
+
 if ((!defined('LLMS_MD_DISABLE_BOOTSTRAP') || !LLMS_MD_DISABLE_BOOTSTRAP) && class_exists('\Soderlind\WordPress\GitHubUpdater')) {
     \Soderlind\WordPress\GitHubUpdater::init(
         github_url: 'https://github.com/soderlind/llms-md',
@@ -38,7 +43,7 @@ if ((!defined('LLMS_MD_DISABLE_BOOTSTRAP') || !LLMS_MD_DISABLE_BOOTSTRAP) && cla
 }
 
 final class LLMS_MD_Plugin {
-    private const VERSION = '0.1.0';
+    private const VERSION = '0.3.0';
     private const QUERY_VAR = 'llms_md';
     private const REWRITE_RULE = '^llms\\.md$';
 
@@ -50,6 +55,7 @@ final class LLMS_MD_Plugin {
 
     private const CRON_DAILY = 'llms_md_daily_rebuild';
     private const CRON_RUN = 'llms_md_run_regeneration';
+    private const AS_GROUP = 'llms-md';
 
     private const SUCCESS_MAX_AGE = 300;
     private const STALE_FAILURE_MAX_AGE = 604800; // 7 days
@@ -78,8 +84,9 @@ final class LLMS_MD_Plugin {
     }
 
     public static function deactivate(): void {
-        wp_clear_scheduled_hook(self::CRON_DAILY);
-        wp_clear_scheduled_hook(self::CRON_RUN);
+        $instance = self::$instance instanceof self ? self::$instance : new self();
+        $instance->unschedule_all(self::CRON_DAILY);
+        $instance->unschedule_all(self::CRON_RUN);
         flush_rewrite_rules();
     }
 
@@ -102,8 +109,9 @@ final class LLMS_MD_Plugin {
         add_action('admin_post_llms_md_check_connector', [$this, 'handle_check_connector']);
         add_action('admin_post_llms_md_preview_payload', [$this, 'handle_preview_payload']);
         add_action('admin_notices', [$this, 'maybe_show_admin_notices']);
+        add_action('wp_ajax_llms_md_poll_status', [$this, 'handle_poll_status']);
 
-        if (!wp_next_scheduled(self::CRON_DAILY)) {
+        if (!$this->has_any_scheduled(self::CRON_DAILY)) {
             $this->schedule_daily_rebuild();
         }
     }
@@ -382,11 +390,35 @@ final class LLMS_MD_Plugin {
         echo '</tbody>';
         echo '</table>';
 
-        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="margin-top: 16px">';
+        echo '<form id="llms-md-regen-form" method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="margin-top: 16px">';
         wp_nonce_field('llms_md_manual_regenerate');
         echo '<input type="hidden" name="action" value="llms_md_manual_regenerate" />';
         submit_button('Regenerate llms.md', 'primary', 'submit', false);
         echo '</form>';
+        ?>
+        <div id="llms-md-progress-wrap" style="display:none;margin-top:12px;max-width:900px">
+            <p id="llms-md-progress-label" style="margin-bottom:6px">Regenerating llms.md&hellip;</p>
+            <div style="background:#ddd;border-radius:3px;height:20px;overflow:hidden;position:relative">
+                <div id="llms-md-progress-bar" style="
+                    position:absolute;height:100%;width:40%;
+                    background:#2271b1;border-radius:3px;
+                    animation:llms-md-slide 1.4s ease-in-out infinite;
+                "></div>
+            </div>
+        </div>
+        <style>
+        @keyframes llms-md-slide {
+            0%   { left:-40%; }
+            100% { left:100%; }
+        }
+        </style>
+        <script>
+        document.getElementById('llms-md-regen-form').addEventListener('submit', function () {
+            document.getElementById('llms-md-progress-wrap').style.display = 'block';
+            this.querySelector('[type=submit]').disabled = true;
+        });
+        </script>
+        <?php
 
         echo '<hr style="margin: 24px 0" />';
         echo '<h2>Diagnostics</h2>';
@@ -420,8 +452,11 @@ final class LLMS_MD_Plugin {
 
         check_admin_referer('llms_md_manual_regenerate');
 
-        $this->schedule_regeneration('manual_regenerate', true);
-        $this->admin_redirect_with_notice('scheduled');
+        $this->run_regeneration('manual_regenerate');
+
+        $state = $this->get_state();
+        $notice = ($state['last_status'] ?? '') === 'success' ? 'regenerated' : 'regen_failed';
+        $this->admin_redirect_with_notice($notice);
     }
 
     public function handle_check_connector(): void {
@@ -472,6 +507,22 @@ final class LLMS_MD_Plugin {
         $this->admin_redirect_with_notice('preview_ready');
     }
 
+    public function handle_poll_status(): void {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions.', 403);
+        }
+
+        check_ajax_referer('llms_md_poll_status');
+
+        $state = $this->get_state();
+        wp_send_json_success([
+            'locked'          => $this->is_locked(),
+            'last_status'     => (string) ($state['last_status'] ?? ''),
+            'last_attempt_at' => (int) ($state['last_attempt_at'] ?? 0),
+            'last_error'      => (string) ($state['last_error'] ?? ''),
+        ]);
+    }
+
     private function admin_redirect_with_notice(string $notice): void {
         wp_safe_redirect(add_query_arg(['page' => 'llms-md', 'llms_md_notice' => $notice], admin_url('options-general.php')));
 
@@ -484,6 +535,17 @@ final class LLMS_MD_Plugin {
     public function maybe_show_admin_notices(): void {
         if (!current_user_can('manage_options')) {
             return;
+        }
+
+        if (isset($_GET['page'], $_GET['llms_md_notice']) && $_GET['page'] === 'llms-md' && $_GET['llms_md_notice'] === 'regenerated') {
+            echo '<div class="notice notice-success is-dismissible"><p>llms.md regenerated successfully.</p></div>';
+        }
+
+        if (isset($_GET['page'], $_GET['llms_md_notice']) && $_GET['page'] === 'llms-md' && $_GET['llms_md_notice'] === 'regen_failed') {
+            $state = $this->get_state();
+            $error = esc_html((string) ($state['last_error'] ?? ''));
+            $msg   = $error !== '' ? 'llms.md regeneration failed: ' . $error : 'llms.md regeneration failed.';
+            echo '<div class="notice notice-error is-dismissible"><p>' . $msg . '</p></div>';
         }
 
         if (isset($_GET['page'], $_GET['llms_md_notice']) && $_GET['page'] === 'llms-md' && $_GET['llms_md_notice'] === 'scheduled') {
@@ -526,7 +588,13 @@ final class LLMS_MD_Plugin {
     }
 
     private function schedule_daily_rebuild(): void {
-        if (!wp_next_scheduled(self::CRON_DAILY)) {
+        if ($this->has_any_scheduled(self::CRON_DAILY)) {
+            return;
+        }
+
+        if (function_exists('as_schedule_recurring_action')) {
+            as_schedule_recurring_action(time() + 60, DAY_IN_SECONDS, self::CRON_DAILY, [], self::AS_GROUP);
+        } else {
             wp_schedule_event(time() + 60, 'daily', self::CRON_DAILY);
         }
     }
@@ -544,7 +612,8 @@ final class LLMS_MD_Plugin {
         }
 
         if (!$this->has_any_run_scheduled()) {
-            wp_schedule_single_event(time() + 10, self::CRON_RUN, [sanitize_key($reason)]);
+            $delay = $force ? 1 : 10;
+            $this->schedule_single(time() + $delay, self::CRON_RUN, [sanitize_key($reason)]);
         }
     }
 
@@ -560,7 +629,7 @@ final class LLMS_MD_Plugin {
             $next_allowed = time() + 10;
         }
 
-        wp_schedule_single_event($next_allowed, self::CRON_RUN, ['coalesced']);
+        $this->schedule_single($next_allowed, self::CRON_RUN, ['coalesced']);
     }
 
     private function maybe_schedule_coalesced_run(): void {
@@ -576,27 +645,36 @@ final class LLMS_MD_Plugin {
         }
 
         if (!$this->has_any_run_scheduled()) {
-            wp_schedule_single_event(time() + 10, self::CRON_RUN, ['coalesced']);
+            $this->schedule_single(time() + 10, self::CRON_RUN, ['coalesced']);
         }
     }
 
     private function has_any_run_scheduled(): bool {
-        if (function_exists('_get_cron_array')) {
-            $cron = _get_cron_array();
-            if (is_array($cron)) {
-                foreach ($cron as $events) {
-                    if (!is_array($events)) {
-                        continue;
-                    }
+        return $this->has_any_scheduled(self::CRON_RUN);
+    }
 
-                    if (!empty($events[self::CRON_RUN])) {
-                        return true;
-                    }
-                }
-            }
+    private function has_any_scheduled(string $hook): bool {
+        if (function_exists('as_has_scheduled_action')) {
+            return as_has_scheduled_action($hook, null, self::AS_GROUP);
         }
 
-        return false;
+        return (bool) wp_next_scheduled($hook);
+    }
+
+    private function schedule_single(int $timestamp, string $hook, array $args = []): void {
+        if (function_exists('as_schedule_single_action')) {
+            as_schedule_single_action($timestamp, $hook, $args, self::AS_GROUP);
+        } else {
+            wp_schedule_single_event($timestamp, $hook, $args);
+        }
+    }
+
+    private function unschedule_all(string $hook): void {
+        if (function_exists('as_unschedule_all_actions')) {
+            as_unschedule_all_actions($hook, [], self::AS_GROUP);
+        } else {
+            wp_clear_scheduled_hook($hook);
+        }
     }
 
     private function is_recent_success(): bool {
