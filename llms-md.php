@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       llms.md
  * Description:       Serves /llms.md from cached AI-generated site analysis.
- * Version:           0.3.0
+ * Version:           0.4.0
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Plugin URI:        https://github.com/soderlind/llms-md
@@ -43,7 +43,7 @@ if ((!defined('LLMS_MD_DISABLE_BOOTSTRAP') || !LLMS_MD_DISABLE_BOOTSTRAP) && cla
 }
 
 final class LLMS_MD_Plugin {
-    private const VERSION = '0.3.0';
+    private const VERSION = '0.4.0';
     private const QUERY_VAR = 'llms_md';
     private const REWRITE_RULE = '^llms\\.md$';
 
@@ -438,8 +438,84 @@ final class LLMS_MD_Plugin {
 
         $preview = get_option(self::OPTION_ADMIN_PREVIEW, '');
         if (is_string($preview) && $preview !== '') {
-            echo '<h3 style="margin-top: 16px">Last Payload Preview</h3>';
-            echo '<textarea readonly rows="16" style="width: 100%; font-family: monospace">' . esc_textarea($preview) . '</textarea>';
+            echo '<div id="llms-md-preview-panel" class="postbox" style="margin-top: 16px; max-width: 900px">';
+            echo '<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px; border-bottom: 1px solid #dcdcde; background: linear-gradient(180deg, #f6f7f7 0%, #fff 100%); border-top-left-radius: 8px; border-top-right-radius: 8px">';
+            echo '<h3 style="margin: 0; font-size: 14px; font-weight: 600">Last Payload Preview</h3>';
+            echo '<button type="button" class="button-link" id="llms-md-preview-close" aria-label="Close payload preview" style="font-size: 22px; line-height: 1; text-decoration: none; color: #50575e">&times;</button>';
+            echo '</div>';
+            echo '<div style="padding: 12px 14px">';
+            echo '<pre id="llms-md-preview-json" style="margin: 0; white-space: pre; overflow: auto; max-height: 460px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace; font-size: 12px; line-height: 1.5; color: #1d2327; background: #f6f7f7; border: 1px solid #dcdcde; border-radius: 6px; padding: 10px"></pre>';
+            echo '<script>window.llmsMdPreviewRaw = ' . wp_json_encode($preview) . ';</script>';
+            echo '</div>';
+            echo '</div>';
+            ?>
+            <script>
+            (function () {
+                var closeBtn = document.getElementById('llms-md-preview-close');
+                var panel = document.getElementById('llms-md-preview-panel');
+                var jsonNode = document.getElementById('llms-md-preview-json');
+                if (!closeBtn || !panel) {
+                    return;
+                }
+
+                if (jsonNode) {
+                    var raw = typeof window.llmsMdPreviewRaw === 'string' ? window.llmsMdPreviewRaw : '{}';
+                    var pretty = raw;
+
+                    try {
+                        pretty = JSON.stringify(JSON.parse(raw), null, 2);
+                    } catch (e) {
+                        // Keep raw content if JSON parsing fails unexpectedly.
+                    }
+
+                    jsonNode.innerHTML = highlightJson(pretty);
+                }
+
+                closeBtn.addEventListener('click', function () {
+                    panel.style.display = 'none';
+                });
+
+                closeBtn.addEventListener('mouseenter', function () {
+                    closeBtn.style.color = '#d63638';
+                });
+
+                closeBtn.addEventListener('mouseleave', function () {
+                    closeBtn.style.color = '#50575e';
+                });
+
+                function highlightJson(json) {
+                    var escaped = json
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+
+                    return escaped.replace(/("(?:\\u[0-9a-fA-F]{4}|\\[^u]|[^\\\"])*"\s*:?)|(\btrue\b|\bfalse\b|\bnull\b)|(-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)/g, function (match, stringToken, literalToken, numberToken) {
+                        if (stringToken) {
+                            if (/:$/.test(stringToken)) {
+                                return '<span style="color:#9a3412;font-weight:600">' + stringToken + '</span>';
+                            }
+
+                            return '<span style="color:#0f766e">' + stringToken + '</span>';
+                        }
+
+                        if (literalToken) {
+                            if (literalToken === 'null') {
+                                return '<span style="color:#7c3aed">' + literalToken + '</span>';
+                            }
+
+                            return '<span style="color:#1d4ed8">' + literalToken + '</span>';
+                        }
+
+                        if (numberToken) {
+                            return '<span style="color:#b45309">' + numberToken + '</span>';
+                        }
+
+                        return match;
+                    });
+                }
+            }());
+            </script>
+            <?php
         }
 
         echo '</div>';
