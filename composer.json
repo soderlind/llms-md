@@ -1,0 +1,24 @@
+{
+  "name": "persoderlind/llms-md",
+  "description": "WordPress plugin serving /llms.md from cached AI-generated analysis",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "php": ">=8.3",
+    "soderlind/wordpress-github-updater": "^2.0"
+  },
+  "require-dev": {
+    "brain/monkey": "^2.6",
+    "phpunit/phpunit": "^9.6",
+    "wp-phpunit/wp-phpunit": "^6.6",
+    "yoast/phpunit-polyfills": "^2.0"
+  },
+  "scripts": {
+    "test": "phpunit -c phpunit.xml.dist",
+    "test:unit": "phpunit -c phpunit.unit.xml.dist",
+    "test:wp": "WP_TESTS_DIR=vendor/wp-phpunit/wp-phpunit phpunit -c phpunit.xml.dist"
+  },
+  "config": {
+    "sort-packages": true
+  }
+}

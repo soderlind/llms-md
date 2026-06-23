@@ -1,0 +1,13 @@
+.git/
+.github/
+.gitignore
+
+composer.phar
+phpunit.xml.dist
+
+tests/
+
+vendor/bin/
+
+.DS_Store
+Thumbs.db

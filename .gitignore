@@ -1,0 +1,23 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE/editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Composer dependencies
+vendor/
+
+# PHPUnit / coverage
+.phpunit.result.cache
+coverage/
+
+# Build artifacts
+build/
+*.zip
+
+# Logs
+*.log

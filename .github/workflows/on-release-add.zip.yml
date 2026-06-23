@@ -1,0 +1,59 @@
+name: on-release-add.zip
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-upload-zip:
+    runs-on: ubuntu-latest
+
+    env:
+      PLUGIN_SLUG: llms-md
+      PLUGIN_ZIP: llms-md.zip
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          tools: composer
+
+      - name: Install production dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+      - name: Build plugin zip
+        run: |
+          rm -rf build "$PLUGIN_ZIP"
+          mkdir -p "build/$PLUGIN_SLUG"
+
+          rsync -av --delete \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='tests' \
+            --exclude='vendor/bin' \
+            --exclude='phpunit.xml.dist' \
+            --exclude='.DS_Store' \
+            ./ "build/$PLUGIN_SLUG/"
+
+          (
+            cd build
+            zip -r "../$PLUGIN_ZIP" "$PLUGIN_SLUG"
+          )
+
+      - name: Verify updater dependencies in zip
+        run: |
+          unzip -l "$PLUGIN_ZIP" | grep -q "vendor/yahnis-elsts/plugin-update-checker"
+          unzip -l "$PLUGIN_ZIP" | grep -q "vendor/soderlind/wordpress-github-updater"
+
+      - name: Upload zip to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: llms-md.zip
+          overwrite_files: true
