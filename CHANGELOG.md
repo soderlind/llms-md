@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.2.0 - 2026-06-23
+
+### Changed
+- Updated installation instructions in README.md and readme.txt.
+
 ## 0.1.0 - 2026-06-23
 
 ### Added

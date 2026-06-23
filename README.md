@@ -141,6 +141,12 @@ composer install
 Run DB-free unit tests first (Brain Monkey):
 
 ```bash
+composer test
+```
+
+Equivalent explicit unit command:
+
+```bash
 composer test:unit
 ```
 
