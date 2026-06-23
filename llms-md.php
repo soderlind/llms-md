@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       llms.md
  * Description:       Serves /llms.md from cached AI-generated site analysis.
- * Version:           0.1.0
+ * Version:           0.2.0
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Plugin URI:        https://github.com/soderlind/llms-md
@@ -86,6 +86,7 @@ final class LLMS_MD_Plugin {
     private function register_hooks(): void {
         add_action('init', [$this, 'register_rewrite']);
         add_filter('query_vars', [$this, 'query_vars']);
+        add_action('send_headers', [$this, 'add_discovery_link_header']);
         add_action('parse_request', [$this, 'maybe_serve_llms_md_early'], 0);
         add_action('template_redirect', [$this, 'maybe_serve_llms_md']);
 
@@ -162,6 +163,19 @@ final class LLMS_MD_Plugin {
         }
 
         $this->serve_snapshot($snapshot);
+    }
+
+    public function add_discovery_link_header(): void {
+        $this->emit_discovery_link_header();
+    }
+
+    private function emit_discovery_link_header(): void {
+        $llms_url = home_url('/llms.md');
+        if (!is_string($llms_url) || $llms_url === '') {
+            return;
+        }
+
+        header('Link: <' . $llms_url . '>; rel="alternate"; type="text/markdown"', false);
     }
 
     private function is_llms_md_request(): bool {
@@ -654,6 +668,8 @@ final class LLMS_MD_Plugin {
     }
 
     private function serve_snapshot(array $snapshot): void {
+        $this->emit_discovery_link_header();
+
         $content = (string) ($snapshot['content'] ?? '');
         $etag = (string) ($snapshot['etag'] ?? sha1($content));
         $generated_at = (int) ($snapshot['generated_at'] ?? time());
@@ -683,6 +699,8 @@ final class LLMS_MD_Plugin {
     }
 
     private function respond_503(string $message): void {
+        $this->emit_discovery_link_header();
+
         status_header(503);
         header('Content-Type: text/markdown; charset=utf-8');
         header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -995,6 +1013,8 @@ final class LLMS_MD_Plugin {
     }
 
     private function serve_physical_file(string $path): void {
+        $this->emit_discovery_link_header();
+
         status_header(200);
         header('Content-Type: text/markdown; charset=utf-8');
         header('Cache-Control: public, max-age=' . self::SUCCESS_MAX_AGE);

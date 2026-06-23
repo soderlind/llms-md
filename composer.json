@@ -14,7 +14,7 @@
     "yoast/phpunit-polyfills": "^2.0"
   },
   "scripts": {
-    "test": "phpunit -c phpunit.xml.dist",
+    "test": "phpunit -c phpunit.unit.xml.dist",
     "test:unit": "phpunit -c phpunit.unit.xml.dist",
     "test:wp": "WP_TESTS_DIR=vendor/wp-phpunit/wp-phpunit phpunit -c phpunit.xml.dist"
   },

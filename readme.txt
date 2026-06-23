@@ -4,7 +4,7 @@ Tags: ai, llms, markdown, seo, discovery
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 0.1.0
+Stable tag: 0.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -46,7 +46,20 @@ Yes. The endpoint is handled per-site and supports subsite paths such as /subsit
 
 Yes. Use the llms_md_provider_id filter, or llms_md_model_id if it maps to a registered connector.
 
+== Development Tests ==
+
+For local and CI defaults, use mocked unit tests:
+
+* composer test
+
+Run WordPress integration tests only when a WordPress test database/environment is available:
+
+* composer test:wp
+
 == Changelog ==
+
+= 0.2.0 =
+* Updated installation instructions in README.md and readme.txt.
 
 = 0.1.0 =
 * Initial release.
