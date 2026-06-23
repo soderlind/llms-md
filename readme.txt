@@ -28,11 +28,9 @@ Key behavior:
 
 == Installation ==
 
-1. Upload the plugin folder to /wp-content/plugins/.
-2. Activate the plugin through Plugins in wp-admin.
-3. Ensure at least one WP Core AI provider connector is configured.
-4. Visit Settings -> llms.md and run Regenerate llms.md.
-5. Verify endpoint output at /llms.md.
+1. Download [llms-md.zip](https://github.com/soderlind/llms-md/releases/latest/download/llms-md.zip)
+2. Go to **Plugins > Add New > Upload Plugin**
+3. Upload the zip file and activate
 
 == Frequently Asked Questions ==
 

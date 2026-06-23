@@ -8,6 +8,16 @@ Provides a generated `site.tld/llms.md` endpoint for WordPress using cached AI-d
 - PHP 8.3+
 - Configured WP Core AI connector
 
+## Installation
+
+1. Download [`llms-md.zip`](https://github.com/soderlind/llms-md/releases/latest/download/llms-md.zip)
+2. Go to **Plugins > Add New > Upload Plugin**
+3. Upload the zip file and activate
+4. Configure at least one WP Core AI provider connector
+5. Go to **Settings > llms.md** and run **Regenerate llms.md**
+
+If a release zip is not available yet, install from source by cloning this repository into your WordPress plugins directory and activating `llms-md`.
+
 ## v1 Behavior
 
 - Owns only `/llms.md` (no custom path).
@@ -92,18 +102,17 @@ add_filter('llms_md_generate_document', function ($document, array $payload, arr
 
 ## GitHub Updates
 
-This plugin includes `soderlind/wordpress-github-updater` for GitHub-based update checks.
+Uses `soderlind/wordpress-github-updater` for update checks from:
 
 - Repository: `https://github.com/soderlind/llms-md`
-- Branch: `main`
-- Asset regex: `/llms-md\.zip/`
+- Release asset: `llms-md.zip` (regex: `/llms-md\.zip/`)
 
-Optional GitHub auth token sources:
+Optional GitHub token sources:
 
 - Constant: `LLMS_MD_GITHUB_TOKEN`
 - Filter: `llms_md_github_auth_token`
 
-Make sure production release zip files include `vendor/` dependencies.
+Release zips must include `vendor/` dependencies.
 
 ## Release Workflows
 
@@ -127,6 +136,12 @@ Install local test dependencies:
 
 ```bash
 composer install
+```
+
+Run DB-free unit tests first (Brain Monkey):
+
+```bash
+composer test:unit
 ```
 
 Run tests using vendor-installed wp-phpunit helpers:
