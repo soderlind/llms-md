@@ -2,6 +2,8 @@
 
 Provides a generated `site.tld/llms.md` endpoint for WordPress using cached AI-driven site analysis.
 
+> **New to llms.md?** See [What is llms.md?](docs/what-is-llms.md) for background.
+
 ## Requirements
 
 - WordPress 7.0+
