@@ -1,10 +1,10 @@
 === llms.md ===
-Contributors: persoderlind
-Tags: ai, llms, markdown, seo, discovery
+Contributors: PerS
+Tags: llms, markdown, seo, discovery, connector
 Requires at least: 7.0
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 8.3
-Stable tag: 0.4.0
+Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,9 +28,16 @@ Key behavior:
 
 == Installation ==
 
-1. Download [llms-md.zip](https://github.com/soderlind/llms-md/releases/latest/download/llms-md.zip)
-2. Go to **Plugins > Add New > Upload Plugin**
-3. Upload the zip file and activate
+1. In your WordPress admin, go to **Plugins > Add New**.
+2. Search for **llms.md**.
+3. Click **Install Now**, then **Activate**.
+4. Configure at least one WP Core AI provider connector.
+5. Go to **Settings > llms.md** and run **Regenerate llms.md**.
+
+Manual installation:
+
+1. Upload the `llms-md` folder to the `/wp-content/plugins/` directory.
+2. Activate the plugin through the **Plugins** menu in WordPress.
 
 == Frequently Asked Questions ==
 
@@ -57,6 +64,15 @@ Run WordPress integration tests only when a WordPress test database/environment 
 * composer test:wp
 
 == Changelog ==
+
+= 1.0.0 =
+* Removed the bundled GitHub self-updater and its dependency for WordPress.org compliance.
+* Raised the minimum required WordPress version to 7.0 (WP Core AI requirement).
+* Sanitized and unslashed all request superglobals (request URI, conditional-request headers, document root, admin notices).
+* Internationalized all admin UI strings with the llms-md text domain.
+* Updated installation instructions for the WordPress.org plugin directory.
+* Expanded .distignore to exclude development files from the distributed package.
+* Passed WordPress Plugin Check with no findings in the distributed plugin.
 
 = 0.4.0 =
 * Improved admin Payload Preview presentation with a closable panel.

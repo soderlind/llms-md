@@ -12,13 +12,12 @@ Provides a generated `site.tld/llms.md` endpoint for WordPress using cached AI-d
 
 ## Installation
 
-1. Download [`llms-md.zip`](https://github.com/soderlind/llms-md/releases/latest/download/llms-md.zip)
-2. Go to **Plugins > Add New > Upload Plugin**
-3. Upload the zip file and activate
-4. Configure at least one WP Core AI provider connector
-5. Go to **Settings > llms.md** and run **Regenerate llms.md**
+1. In your WordPress admin, go to **Plugins > Add New** and search for **llms.md**.
+2. Click **Install Now**, then **Activate**.
+3. Configure at least one WP Core AI provider connector.
+4. Go to **Settings > llms.md** and run **Regenerate llms.md**.
 
-If a release zip is not available yet, install from source by cloning this repository into your WordPress plugins directory and activating `llms-md`.
+To install from source, clone this repository into your WordPress plugins directory, run `composer install --no-dev`, and activate `llms-md`.
 
 ## v1 Behavior
 
@@ -104,21 +103,11 @@ add_filter('llms_md_generate_document', function ($document, array $payload, arr
 
 ## GitHub Updates
 
-Uses `soderlind/wordpress-github-updater` for update checks from:
-
-- Repository: `https://github.com/soderlind/llms-md`
-- Release asset: `llms-md.zip` (regex: `/llms-md\.zip/`)
-
-Optional GitHub token sources:
-
-- Constant: `LLMS_MD_GITHUB_TOKEN`
-- Filter: `llms_md_github_auth_token`
-
-Release zips must include `vendor/` dependencies.
+This plugin is distributed through the WordPress.org plugin directory and uses the standard WordPress update mechanism. No self-updater is bundled.
 
 ## Release Workflows
 
-Two workflows are included in `.github/workflows/` for GitHub updater compatibility:
+A workflow in `.github/workflows/` can build `llms-md.zip` for GitHub releases:
 
 - `on-release-add.zip.yml` builds `llms-md.zip` and uploads it to published releases.
 - `manually-build-zip.yml` builds `llms-md.zip` on demand and can upload to a tag release.
