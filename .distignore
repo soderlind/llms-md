@@ -1,13 +1,33 @@
+# Version control and CI
 .git/
 .github/
 .gitignore
+.distignore
 
-composer.phar
-phpunit.xml.dist
-
-tests/
-
-vendor/bin/
-
+# Editor / OS
 .DS_Store
 Thumbs.db
+.idea/
+.vscode/
+
+# Tests and PHPUnit
+tests/
+phpunit.xml.dist
+phpunit.unit.xml.dist
+.phpunit.result.cache
+coverage/
+
+# Composer (dev-only tooling)
+composer.json
+composer.lock
+composer.phar
+vendor/bin/
+
+# Development documentation
+CONTEXT.md
+docs/
+
+# Build artifacts
+build/
+*.zip
+*.log

@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented in this file.
 
+## 1.0.0 - 2026-07-22
+
+### Added
+- Internationalized all admin UI strings with the `llms-md` text domain.
+- Expanded `.distignore` to exclude development files from the distributed package.
+
+### Changed
+- Raised the minimum required WordPress version to 7.0 (WP Core AI requirement).
+- Sanitized and unslashed all request superglobals (request URI, conditional-request headers, document root, admin notices).
+- Updated installation instructions for the WordPress.org plugin directory.
+
+### Removed
+- Bundled GitHub self-updater and its dependency, for WordPress.org compliance.
+
 ## 0.4.0 - 2026-06-23
 
 ### Changed

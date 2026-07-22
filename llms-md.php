@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       llms.md
  * Description:       Serves /llms.md from cached AI-generated site analysis.
- * Version:           0.4.0
+ * Version:           1.0.0
  * Requires at least: 7.0
  * Requires PHP:      8.3
  * Plugin URI:        https://github.com/soderlind/llms-md
@@ -27,23 +27,8 @@ if (is_readable($llms_md_as)) {
     require_once $llms_md_as;
 }
 
-if ((!defined('LLMS_MD_DISABLE_BOOTSTRAP') || !LLMS_MD_DISABLE_BOOTSTRAP) && class_exists('\Soderlind\WordPress\GitHubUpdater')) {
-    \Soderlind\WordPress\GitHubUpdater::init(
-        github_url: 'https://github.com/soderlind/llms-md',
-        plugin_file: __FILE__,
-        plugin_slug: 'llms-md',
-        name_regex: '/llms-md\\.zip/',
-        branch: 'main',
-        check_period: 6,
-        auth_token: (string) apply_filters(
-            'llms_md_github_auth_token',
-            defined('LLMS_MD_GITHUB_TOKEN') ? (string) LLMS_MD_GITHUB_TOKEN : ''
-        ),
-    );
-}
-
 final class LLMS_MD_Plugin {
-    private const VERSION = '0.4.0';
+    private const VERSION = '1.0.0';
     private const QUERY_VAR = 'llms_md';
     private const REWRITE_RULE = '^llms\\.md$';
 
@@ -197,7 +182,9 @@ final class LLMS_MD_Plugin {
     private function request_uri_matches_llms_md(?string $request_uri = null): bool {
         $uri = $request_uri;
         if (!is_string($uri) || $uri === '') {
-            $uri = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '';
+            $uri = isset($_SERVER['REQUEST_URI'])
+                ? esc_url_raw(wp_unslash($_SERVER['REQUEST_URI']))
+                : '';
         }
 
         if ($uri === '') {
@@ -374,30 +361,33 @@ final class LLMS_MD_Plugin {
 
         echo '<div class="wrap">';
         echo '<h1>llms.md</h1>';
-        echo '<p>Status overview for /llms.md generation and serving.</p>';
+        echo '<p>' . esc_html__('Status overview for /llms.md generation and serving.', 'llms-md') . '</p>';
+
+        $yes = __('Yes', 'llms-md');
+        $no  = __('No', 'llms-md');
 
         echo '<table class="widefat striped" style="max-width: 900px">';
         echo '<tbody>';
-        $this->render_admin_row('Plugin version', esc_html(self::VERSION));
-        $this->render_admin_row('Connector configured', $has_connector ? 'Yes' : 'No');
-        $this->render_admin_row('Physical /llms.md detected', $has_physical_file ? 'Yes (passive mode)' : 'No');
-        $this->render_admin_row('Last status', esc_html((string) ($state['last_status'] ?? 'unknown')));
-        $this->render_admin_row('Last attempt', $this->format_timestamp((int) ($state['last_attempt_at'] ?? 0)));
-        $this->render_admin_row('Last error', esc_html((string) ($state['last_error'] ?? '')));
-        $this->render_admin_row('Snapshot generated', $this->format_timestamp((int) ($snapshot['generated_at'] ?? 0)));
-        $this->render_admin_row('Snapshot model', esc_html((string) ($snapshot['model_id'] ?? 'n/a')));
-        $this->render_admin_row('Prompt version', esc_html((string) ($snapshot['prompt_version'] ?? 'n/a')));
+        $this->render_admin_row(__('Plugin version', 'llms-md'), self::VERSION);
+        $this->render_admin_row(__('Connector configured', 'llms-md'), $has_connector ? $yes : $no);
+        $this->render_admin_row(__('Physical /llms.md detected', 'llms-md'), $has_physical_file ? __('Yes (passive mode)', 'llms-md') : $no);
+        $this->render_admin_row(__('Last status', 'llms-md'), (string) ($state['last_status'] ?? __('unknown', 'llms-md')));
+        $this->render_admin_row(__('Last attempt', 'llms-md'), $this->format_timestamp((int) ($state['last_attempt_at'] ?? 0)));
+        $this->render_admin_row(__('Last error', 'llms-md'), (string) ($state['last_error'] ?? ''));
+        $this->render_admin_row(__('Snapshot generated', 'llms-md'), $this->format_timestamp((int) ($snapshot['generated_at'] ?? 0)));
+        $this->render_admin_row(__('Snapshot model', 'llms-md'), (string) ($snapshot['model_id'] ?? __('n/a', 'llms-md')));
+        $this->render_admin_row(__('Prompt version', 'llms-md'), (string) ($snapshot['prompt_version'] ?? __('n/a', 'llms-md')));
         echo '</tbody>';
         echo '</table>';
 
         echo '<form id="llms-md-regen-form" method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="margin-top: 16px">';
         wp_nonce_field('llms_md_manual_regenerate');
         echo '<input type="hidden" name="action" value="llms_md_manual_regenerate" />';
-        submit_button('Regenerate llms.md', 'primary', 'submit', false);
+        submit_button(__('Regenerate llms.md', 'llms-md'), 'primary', 'submit', false);
         echo '</form>';
         ?>
         <div id="llms-md-progress-wrap" style="display:none;margin-top:12px;max-width:900px">
-            <p id="llms-md-progress-label" style="margin-bottom:6px">Regenerating llms.md&hellip;</p>
+            <p id="llms-md-progress-label" style="margin-bottom:6px"><?php esc_html_e('Regenerating llms.md…', 'llms-md'); ?></p>
             <div style="background:#ddd;border-radius:3px;height:20px;overflow:hidden;position:relative">
                 <div id="llms-md-progress-bar" style="
                     position:absolute;height:100%;width:40%;
@@ -421,27 +411,27 @@ final class LLMS_MD_Plugin {
         <?php
 
         echo '<hr style="margin: 24px 0" />';
-        echo '<h2>Diagnostics</h2>';
-        echo '<p>Run connector checks and preview the bounded analysis payload used for generation.</p>';
+        echo '<h2>' . esc_html__('Diagnostics', 'llms-md') . '</h2>';
+        echo '<p>' . esc_html__('Run connector checks and preview the bounded analysis payload used for generation.', 'llms-md') . '</p>';
 
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="display: inline-block; margin-right: 8px">';
         wp_nonce_field('llms_md_check_connector');
         echo '<input type="hidden" name="action" value="llms_md_check_connector" />';
-        submit_button('Check Connector', 'secondary', 'submit', false);
+        submit_button(__('Check Connector', 'llms-md'), 'secondary', 'submit', false);
         echo '</form>';
 
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="display: inline-block">';
         wp_nonce_field('llms_md_preview_payload');
         echo '<input type="hidden" name="action" value="llms_md_preview_payload" />';
-        submit_button('Preview Payload', 'secondary', 'submit', false);
+        submit_button(__('Preview Payload', 'llms-md'), 'secondary', 'submit', false);
         echo '</form>';
 
         $preview = get_option(self::OPTION_ADMIN_PREVIEW, '');
         if (is_string($preview) && $preview !== '') {
             echo '<div id="llms-md-preview-panel" class="postbox" style="margin-top: 16px; max-width: 900px">';
             echo '<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px; border-bottom: 1px solid #dcdcde; background: linear-gradient(180deg, #f6f7f7 0%, #fff 100%); border-top-left-radius: 8px; border-top-right-radius: 8px">';
-            echo '<h3 style="margin: 0; font-size: 14px; font-weight: 600">Last Payload Preview</h3>';
-            echo '<button type="button" class="button-link" id="llms-md-preview-close" aria-label="Close payload preview" style="font-size: 22px; line-height: 1; text-decoration: none; color: #50575e">&times;</button>';
+            echo '<h3 style="margin: 0; font-size: 14px; font-weight: 600">' . esc_html__('Last Payload Preview', 'llms-md') . '</h3>';
+            echo '<button type="button" class="button-link" id="llms-md-preview-close" aria-label="' . esc_attr__('Close payload preview', 'llms-md') . '" style="font-size: 22px; line-height: 1; text-decoration: none; color: #50575e">&times;</button>';
             echo '</div>';
             echo '<div style="padding: 12px 14px">';
             echo '<pre id="llms-md-preview-json" style="margin: 0; white-space: pre; overflow: auto; max-height: 460px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace; font-size: 12px; line-height: 1.5; color: #1d2327; background: #f6f7f7; border: 1px solid #dcdcde; border-radius: 6px; padding: 10px"></pre>';
@@ -523,7 +513,7 @@ final class LLMS_MD_Plugin {
 
     public function handle_manual_regenerate(): void {
         if (!current_user_can('manage_options')) {
-            wp_die('Insufficient permissions.', 'Forbidden', ['response' => 403]);
+            wp_die(esc_html__('Insufficient permissions.', 'llms-md'), esc_html__('Forbidden', 'llms-md'), ['response' => 403]);
         }
 
         check_admin_referer('llms_md_manual_regenerate');
@@ -537,7 +527,7 @@ final class LLMS_MD_Plugin {
 
     public function handle_check_connector(): void {
         if (!current_user_can('manage_options')) {
-            wp_die('Insufficient permissions.', 'Forbidden', ['response' => 403]);
+            wp_die(esc_html__('Insufficient permissions.', 'llms-md'), esc_html__('Forbidden', 'llms-md'), ['response' => 403]);
         }
 
         check_admin_referer('llms_md_check_connector');
@@ -559,7 +549,7 @@ final class LLMS_MD_Plugin {
 
     public function handle_preview_payload(): void {
         if (!current_user_can('manage_options')) {
-            wp_die('Insufficient permissions.', 'Forbidden', ['response' => 403]);
+            wp_die(esc_html__('Insufficient permissions.', 'llms-md'), esc_html__('Forbidden', 'llms-md'), ['response' => 403]);
         }
 
         check_admin_referer('llms_md_preview_payload');
@@ -585,7 +575,7 @@ final class LLMS_MD_Plugin {
 
     public function handle_poll_status(): void {
         if (!current_user_can('manage_options')) {
-            wp_send_json_error('Insufficient permissions.', 403);
+            wp_send_json_error(esc_html__('Insufficient permissions.', 'llms-md'), 403);
         }
 
         check_ajax_referer('llms_md_poll_status');
@@ -613,46 +603,64 @@ final class LLMS_MD_Plugin {
             return;
         }
 
-        if (isset($_GET['page'], $_GET['llms_md_notice']) && $_GET['page'] === 'llms-md' && $_GET['llms_md_notice'] === 'regenerated') {
-            echo '<div class="notice notice-success is-dismissible"><p>llms.md regenerated successfully.</p></div>';
+        // Read-only display notices set via a redirect from nonce-verified admin-post handlers; no state is changed here.
+        // phpcs:disable WordPress.Security.NonceVerification.Recommended -- Display-only admin notice, values are sanitized and not used to mutate state.
+        $page   = isset($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : '';
+        $notice = isset($_GET['llms_md_notice']) ? sanitize_text_field(wp_unslash($_GET['llms_md_notice'])) : '';
+        // phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+        if ($page === 'llms-md' && $notice === 'regenerated') {
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('llms.md regenerated successfully.', 'llms-md') . '</p></div>';
         }
 
-        if (isset($_GET['page'], $_GET['llms_md_notice']) && $_GET['page'] === 'llms-md' && $_GET['llms_md_notice'] === 'regen_failed') {
+        if ($page === 'llms-md' && $notice === 'regen_failed') {
             $state = $this->get_state();
-            $error = esc_html((string) ($state['last_error'] ?? ''));
-            $msg   = $error !== '' ? 'llms.md regeneration failed: ' . $error : 'llms.md regeneration failed.';
-            echo '<div class="notice notice-error is-dismissible"><p>' . $msg . '</p></div>';
+            $error = (string) ($state['last_error'] ?? '');
+            $msg   = $error !== ''
+                ? sprintf(
+                    /* translators: %s: error message from the last regeneration attempt. */
+                    __('llms.md regeneration failed: %s', 'llms-md'),
+                    $error
+                )
+                : __('llms.md regeneration failed.', 'llms-md');
+            echo '<div class="notice notice-error is-dismissible"><p>' . esc_html($msg) . '</p></div>';
         }
 
-        if (isset($_GET['page'], $_GET['llms_md_notice']) && $_GET['page'] === 'llms-md' && $_GET['llms_md_notice'] === 'scheduled') {
-            echo '<div class="notice notice-success is-dismissible"><p>llms.md regeneration scheduled.</p></div>';
+        if ($page === 'llms-md' && $notice === 'scheduled') {
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('llms.md regeneration scheduled.', 'llms-md') . '</p></div>';
         }
 
-        if (isset($_GET['page'], $_GET['llms_md_notice']) && $_GET['page'] === 'llms-md' && $_GET['llms_md_notice'] === 'preview_ready') {
-            echo '<div class="notice notice-success is-dismissible"><p>Payload preview generated.</p></div>';
+        if ($page === 'llms-md' && $notice === 'preview_ready') {
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Payload preview generated.', 'llms-md') . '</p></div>';
         }
 
-        if (isset($_GET['page'], $_GET['llms_md_notice']) && $_GET['page'] === 'llms-md' && str_starts_with((string) $_GET['llms_md_notice'], 'connector_ok')) {
+        if ($page === 'llms-md' && str_starts_with($notice, 'connector_ok')) {
             $provider_ids = '';
-            $parts = explode(':', (string) $_GET['llms_md_notice'], 2);
+            $parts = explode(':', $notice, 2);
             if (count($parts) === 2) {
                 $provider_ids = sanitize_text_field($parts[1]);
             }
 
-            $suffix = $provider_ids !== '' ? ' Configured providers: ' . $provider_ids : '';
-            echo '<div class="notice notice-success is-dismissible"><p>Connector is configured.' . esc_html($suffix) . '</p></div>';
+            $message = $provider_ids !== ''
+                ? sprintf(
+                    /* translators: %s: comma-separated list of configured AI provider IDs. */
+                    __('Connector is configured. Configured providers: %s', 'llms-md'),
+                    $provider_ids
+                )
+                : __('Connector is configured.', 'llms-md');
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($message) . '</p></div>';
         }
 
-        if (isset($_GET['page'], $_GET['llms_md_notice']) && $_GET['page'] === 'llms-md' && $_GET['llms_md_notice'] === 'connector_missing') {
-            echo '<div class="notice notice-error is-dismissible"><p>No configured AI provider connector detected.</p></div>';
+        if ($page === 'llms-md' && $notice === 'connector_missing') {
+            echo '<div class="notice notice-error is-dismissible"><p>' . esc_html__('No configured AI provider connector detected.', 'llms-md') . '</p></div>';
         }
 
         if ($this->find_physical_llms_file() !== null) {
-            echo '<div class="notice notice-warning"><p>llms.md plugin is in passive mode because a physical /llms.md file exists at web root.</p></div>';
+            echo '<div class="notice notice-warning"><p>' . esc_html__('llms.md plugin is in passive mode because a physical /llms.md file exists at web root.', 'llms-md') . '</p></div>';
         }
 
         if (!$this->is_connector_configured()) {
-            echo '<div class="notice notice-error"><p>llms.md requires a configured WP Core AI connector.</p></div>';
+            echo '<div class="notice notice-error"><p>' . esc_html__('llms.md requires a configured WP Core AI connector.', 'llms-md') . '</p></div>';
         }
     }
 
@@ -829,13 +837,17 @@ final class LLMS_MD_Plugin {
         $generated_at = (int) ($snapshot['generated_at'] ?? time());
         $last_modified = (string) ($snapshot['last_modified_gmt'] ?? gmdate('D, d M Y H:i:s', $generated_at) . ' GMT');
 
-        $if_none_match = isset($_SERVER['HTTP_IF_NONE_MATCH']) ? trim((string) $_SERVER['HTTP_IF_NONE_MATCH']) : '';
+        $if_none_match = isset($_SERVER['HTTP_IF_NONE_MATCH'])
+            ? trim(sanitize_text_field(wp_unslash($_SERVER['HTTP_IF_NONE_MATCH'])))
+            : '';
         if ($if_none_match !== '' && trim($if_none_match, '"') === $etag) {
             status_header(304);
             exit;
         }
 
-        $if_modified_since = isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) ? strtotime((string) $_SERVER['HTTP_IF_MODIFIED_SINCE']) : false;
+        $if_modified_since = isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])
+            ? strtotime(sanitize_text_field(wp_unslash($_SERVER['HTTP_IF_MODIFIED_SINCE'])))
+            : false;
         if ($if_modified_since !== false && $if_modified_since >= $generated_at) {
             status_header(304);
             exit;
@@ -848,7 +860,8 @@ final class LLMS_MD_Plugin {
         header('Last-Modified: ' . $last_modified);
         header('X-LLMS-MD-Generated-At: ' . gmdate('c', $generated_at));
 
-        echo $content;
+        // Snapshot body is streamed verbatim as a text/markdown response; HTML escaping would corrupt the document.
+        echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
         exit;
     }
 
@@ -860,8 +873,9 @@ final class LLMS_MD_Plugin {
         header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
         header('Retry-After: ' . self::RETRY_AFTER);
 
+        // Fixed internal strings emitted as a text/markdown response body; not HTML.
         echo "# Service Unavailable\n\n";
-        echo $message . "\n";
+        echo $message . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
         exit;
     }
 
@@ -1152,7 +1166,8 @@ final class LLMS_MD_Plugin {
         $candidates = [];
 
         if (!empty($_SERVER['DOCUMENT_ROOT'])) {
-            $candidates[] = rtrim((string) $_SERVER['DOCUMENT_ROOT'], '/\\') . DIRECTORY_SEPARATOR . 'llms.md';
+            $document_root = sanitize_text_field(wp_unslash($_SERVER['DOCUMENT_ROOT']));
+            $candidates[]  = rtrim($document_root, '/\\') . DIRECTORY_SEPARATOR . 'llms.md';
         }
 
         $candidates[] = trailingslashit(ABSPATH) . 'llms.md';
@@ -1178,7 +1193,8 @@ final class LLMS_MD_Plugin {
             $this->respond_503('llms.md unavailable: physical file exists but is not readable.');
         }
 
-        echo $contents;
+        // Physical llms.md file contents are streamed verbatim as a text/markdown response.
+        echo $contents; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
         exit;
     }
 
@@ -1259,7 +1275,7 @@ final class LLMS_MD_Plugin {
 
     private function format_timestamp(int $timestamp): string {
         if ($timestamp <= 0) {
-            return 'n/a';
+            return __('n/a', 'llms-md');
         }
 
         return gmdate('Y-m-d H:i:s', $timestamp) . ' UTC';
