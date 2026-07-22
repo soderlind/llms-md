@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">llms.md WordPress plugin icon</title>
+  <desc id="desc">A cached llms.md document endpoint generated from a WordPress site.</desc>
+  <rect width="256" height="256" rx="44" fill="#ffffff"/>
+
+  <path d="M54 70h82l30 30v92a18 18 0 0 1-18 18H54a18 18 0 0 1-18-18V88a18 18 0 0 1 18-18Z" fill="none" stroke="#0b0d12" stroke-width="14" stroke-linejoin="round"/>
+  <path d="M136 70v31h30" fill="none" stroke="#0b0d12" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M68 116h68" stroke="#0b0d12" stroke-width="12" stroke-linecap="round"/>
+  <path d="M68 145h92" stroke="#2f6bff" stroke-width="12" stroke-linecap="round"/>
+  <path d="M68 174h54" stroke="#13c29a" stroke-width="12" stroke-linecap="round"/>
+
+  <circle cx="199" cy="91" r="16" fill="#2f6bff"/>
+  <circle cx="199" cy="137" r="16" fill="#13c29a"/>
+  <path d="M182 91h-20" stroke="#0b0d12" stroke-width="10" stroke-linecap="round"/>
+  <path d="M182 137h-18" stroke="#0b0d12" stroke-width="10" stroke-linecap="round"/>
+  <path d="M202 153c0 23-18 41-41 41" fill="none" stroke="#0b0d12" stroke-width="10" stroke-linecap="round"/>
+
+</svg>
