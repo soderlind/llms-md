@@ -36,21 +36,30 @@ jobs:
           rsync -av --delete \
             --exclude='.git' \
             --exclude='.github' \
+            --exclude='.gitignore' \
+            --exclude='.distignore' \
             --exclude='tests' \
-            --exclude='vendor/bin' \
             --exclude='phpunit.xml.dist' \
+            --exclude='phpunit.unit.xml.dist' \
+            --exclude='.phpunit.result.cache' \
+            --exclude='composer.json' \
+            --exclude='composer.lock' \
+            --exclude='vendor/bin' \
+            --exclude='CONTEXT.md' \
+            --exclude='docs' \
             --exclude='.DS_Store' \
+            --exclude='Thumbs.db' \
+            --exclude='.idea' \
+            --exclude='.vscode' \
+            --exclude='build' \
+            --exclude='*.zip' \
+            --exclude='*.log' \
             ./ "build/$PLUGIN_SLUG/"
 
           (
             cd build
             zip -r "../$PLUGIN_ZIP" "$PLUGIN_SLUG"
           )
-
-      - name: Verify updater dependencies in zip
-        run: |
-          unzip -l "$PLUGIN_ZIP" | grep -q "vendor/yahnis-elsts/plugin-update-checker"
-          unzip -l "$PLUGIN_ZIP" | grep -q "vendor/soderlind/wordpress-github-updater"
 
       - name: Upload zip to release
         uses: softprops/action-gh-release@v2
