@@ -1,174 +1,74 @@
-# llms.md WordPress Plugin
+# llms.md
 
-Provides a generated `site.tld/llms.md` endpoint for WordPress using cached AI-driven site analysis.
+Publish an AI-generated `/llms.md` on your WordPress site so AI assistants and LLM tools can understand what your site is about.
 
-> **New to llms.md?** See [What is llms.md?](docs/what-is-llms.md) for background.
+> New to the idea? Read [What is llms.md?](docs/what-is-llms.md).
+
+## Why
+
+AI assistants, chatbots, and research tools increasingly read websites to answer questions. `llms.md` gives them a clean, machine-readable briefing at one predictable address — `https://yoursite.com/llms.md` — so they rely on an accurate overview you control instead of guessing.
+
+## Features
+
+- A ready-to-use `/llms.md` endpoint on your site.
+- An AI-written summary of your site's purpose, key topics, and content.
+- Automatic background updates when you publish or edit content.
+- A daily safety refresh so the file never goes stale.
+- Cached responses — no AI call on every visit.
+- An admin status page with a one-click rebuild.
+- Works on single sites and multisite (including subdirectory installs).
 
 ## Requirements
 
 - WordPress 7.0+
 - PHP 8.3+
-- Configured WP Core AI connector
+- At least one WordPress AI provider connector configured
 
 ## Installation
 
-1. In your WordPress admin, go to **Plugins > Add New** and search for **llms.md**.
+### From the WordPress plugin directory
+
+1. In wp-admin, go to **Plugins > Add New** and search for **llms.md**.
 2. Click **Install Now**, then **Activate**.
-3. Configure at least one WP Core AI provider connector.
-4. Go to **Settings > llms.md** and run **Regenerate llms.md**.
+3. Configure at least one WordPress AI provider connector.
+4. Go to **Settings > llms.md** and click **Regenerate llms.md**.
 
-To install from source, clone this repository into your WordPress plugins directory, run `composer install --no-dev`, and activate `llms-md`.
-
-## v1 Behavior
-
-- Owns only `/llms.md` (no custom path).
-- Uses cached snapshot regeneration, not per-request generation.
-- Defers to a physical web-root `llms.md` file when present.
-- Regenerates on public content changes plus a daily safety rebuild.
-- Requires AI connector; serves `503` with `Retry-After` when missing.
-- Serves stale snapshot for up to 7 days after generation failures, then returns `503`.
-
-## Integration With WP Core AI
-
-The plugin supports two integration paths:
-
-1. Automatic best-effort via `wp_ai_client_prompt(...)->generate_text()` when available.
-2. Recommended filter-based integration for connector-specific behavior.
-
-### Connector availability filter
-
-```php
-add_filter('llms_md_ai_connector_configured', function ($configured) {
-    if (is_bool($configured)) {
-        return $configured;
-    }
-
-    // Replace with your own WP Core AI connector check.
-    if (!function_exists('wp_get_connectors')) {
-        return false;
-    }
-
-    foreach (wp_get_connectors() as $connector) {
-        if (($connector['type'] ?? '') !== 'ai_provider') {
-            continue;
-        }
-
-        $auth = $connector['authentication'] ?? [];
-        if (($auth['method'] ?? '') === 'none') {
-            return true;
-        }
-    }
-
-    return false;
-});
-```
-
-### Generation filter
-
-```php
-add_filter('llms_md_generate_document', function ($document, array $payload, array $context) {
-    if (is_string($document) && trim($document) !== '') {
-        return $document;
-    }
-
-    // Replace this with your WP Core AI call.
-    if (function_exists('wp_ai_client_prompt')) {
-        $prompt = 'Generate llms.md from payload: ' . wp_json_encode($payload);
-        $result = wp_ai_client_prompt($prompt)
-            ->using_temperature(0.0)
-            ->using_candidate_count(1)
-            ->generate_text();
-
-        if (is_string($result) && trim($result) !== '') {
-            return $result;
-        }
-    }
-
-    return $document;
-}, 10, 3);
-```
-
-## Operations
-
-- Admin status page: `Settings -> llms.md`
-- Manual rebuild capability: `manage_options`
-- Regeneration policy: single-flight lock + coalesced rerun + 5-minute minimum successful-run interval
-- Diagnostics panel: `Check Connector` and `Preview Payload` actions in `Settings -> llms.md`
-
-## Provider Selection
-
-- If `llms_md_provider_id` filter returns a non-empty provider ID, that provider is used.
-- Else, if `llms_md_model_id` is set to a registered connector ID, that provider is used.
-- Else, the first configured AI provider connector is selected automatically.
-
-## GitHub Updates
-
-This plugin is distributed through the WordPress.org plugin directory and uses the standard WordPress update mechanism. No self-updater is bundled.
-
-## Release Workflows
-
-A workflow in `.github/workflows/` can build `llms-md.zip` for GitHub releases:
-
-- `on-release-add.zip.yml` builds `llms-md.zip` and uploads it to published releases.
-- `manually-build-zip.yml` builds `llms-md.zip` on demand and can upload to a tag release.
-
-## Verification
-
-- Activate plugin and visit `/llms.md`.
-- Confirm rewrite works and headers are present (`Content-Type`, `ETag`, `Last-Modified`, `X-LLMS-MD-Generated-At`).
-- Confirm `503` behavior when connector is not configured.
-- Trigger content edits and verify scheduled regeneration updates snapshot metadata.
-
-## Tests
-
-This plugin includes a WordPress PHPUnit scaffold in `tests/`.
-
-Install local test dependencies:
+### From source
 
 ```bash
-composer install
+git clone https://github.com/soderlind/llms-md.git
+cd llms-md
+composer install --no-dev
 ```
 
-Run DB-free unit tests first (Brain Monkey):
+Copy the folder into `wp-content/plugins/` and activate **llms.md**.
 
-```bash
-composer test
-```
+## How it works
 
-Equivalent explicit unit command:
+1. The plugin reads your published content (posts, pages, terms).
+2. It asks your configured WordPress AI provider to write a concise Markdown summary.
+3. The result is cached and served at `/llms.md` with proper caching headers.
+4. It refreshes automatically when content changes, plus once a day.
 
-```bash
-composer test:unit
-```
+If a physical `llms.md` file already exists at your site root, the plugin steps aside and serves that instead. Until an AI provider is configured, the endpoint responds with a friendly "not ready yet" status.
 
-Run tests using vendor-installed wp-phpunit helpers:
+## Configuration
 
-```bash
-composer test:wp
-```
+Everything lives under **Settings > llms.md**:
 
-The default test config file is `tests/wp-tests-config.php`. You can override DB values with environment variables:
+- See the current status (provider configured, last update, last error).
+- Rebuild the document on demand.
+- Run diagnostics — **Check Connector** and **Preview Payload**.
 
-- `WP_TESTS_DB_NAME`
-- `WP_TESTS_DB_USER`
-- `WP_TESTS_DB_PASSWORD`
-- `WP_TESTS_DB_HOST`
-- `WP_PHP_BINARY`
-- `WP_TESTS_WP_PATH`
+## Documentation
 
-Alternative with a custom WordPress test library path:
+- [What is llms.md?](docs/what-is-llms.md) — background and the convention.
+- [Developer guide](docs/DEVELOPER.md) — hooks, provider selection, HTTP details, building, and tests.
 
-```bash
-export WP_TESTS_DIR=/path/to/wordpress-tests-lib
-phpunit -c phpunit.xml.dist
-```
+## Contributing
 
-## AI Contribution Attribution
+Issues and pull requests are welcome. See the [developer guide](docs/DEVELOPER.md) for local setup and tests.
 
-When AI tools contribute to this plugin, include attribution in commit messages or release notes using:
+## License
 
-`Assisted-by: AGENT_NAME:MODEL_VERSION [TOOL1] [TOOL2]`
-
-Example:
-
-`Assisted-by: GitHub Copilot:GPT-5.3-Codex`
+Licensed under [GPL-2.0-or-later](https://www.gnu.org/licenses/gpl-2.0.html).

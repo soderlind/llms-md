@@ -8,31 +8,44 @@ Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Generate and serve /llms.md from cached WordPress site analysis using WP Core AI connectors.
+Publish an AI-written /llms.md so AI assistants and chatbots understand your WordPress site.
 
 == Description ==
 
-llms.md provides a site-level /llms.md endpoint designed for machine consumption.
+AI assistants, chatbots, and research tools increasingly read websites to answer questions. **llms.md** gives them a clean, machine-readable briefing about your site at one predictable address: `https://yoursite.com/llms.md`.
 
-The plugin uses cached artifact regeneration rather than per-request AI generation.
+Think of it as a friendly summary written for AI. Instead of guessing what your site is about, tools can read an accurate overview that you control.
 
-Key behavior:
+The plugin creates and maintains this file for you automatically. It reads your published content, asks your configured WordPress AI provider to write a concise Markdown summary, caches the result, and serves it with the right headers. When you publish or edit content, it refreshes in the background.
 
-* Canonical endpoint at /llms.md.
-* Supports multisite subdirectory paths and repeated slash requests (for example /subsite14//llms.md).
-* Defers to an existing physical web-root llms.md file (passive mode).
-* Requires a configured WP Core AI connector.
-* Returns 503 with Retry-After when connector is missing or no valid snapshot is available.
-* Serves stale last-known-good output for up to 7 days after generation failures.
-* Includes admin diagnostics and manual regeneration controls.
+= What you get =
+
+* A ready-to-use `/llms.md` endpoint on your site.
+* An AI-written overview of your site's purpose, key topics, and content.
+* Automatic updates when you add or change published content.
+* A daily safety refresh so the file never goes stale.
+* Fast responses through caching — no AI call on every visit.
+* An admin page to check status and rebuild on demand.
+
+= What you need =
+
+llms.md uses WordPress's built-in AI connectors, so you need at least one AI provider configured on your site. Until a provider is set up, the endpoint politely reports that it isn't ready yet.
+
+= Good to know =
+
+* The plugin only manages the `/llms.md` address — it doesn't change your other pages.
+* If you already have a physical `llms.md` file at your site root, the plugin steps aside and serves that instead.
+* Works on single sites and multisite, including subdirectory installs.
+
+Learn more about the idea behind it in the [llms.txt initiative](https://llmstxt.org/). Developers can find hooks, provider selection, and build/test details in the plugin's `docs/DEVELOPER.md`.
 
 == Installation ==
 
 1. In your WordPress admin, go to **Plugins > Add New**.
 2. Search for **llms.md**.
 3. Click **Install Now**, then **Activate**.
-4. Configure at least one WP Core AI provider connector.
-5. Go to **Settings > llms.md** and run **Regenerate llms.md**.
+4. Configure at least one WordPress AI provider connector.
+5. Go to **Settings > llms.md** and click **Regenerate llms.md**.
 
 Manual installation:
 
@@ -41,27 +54,33 @@ Manual installation:
 
 == Frequently Asked Questions ==
 
-= Why do I get HTTP 503 at /llms.md? =
+= What is llms.md? =
 
-Usually because no AI connector is configured yet, or no snapshot has been generated.
+It's a simple convention: a Markdown file at `/llms.md` that describes your site for AI tools and LLM agents — similar in spirit to how `robots.txt` guides search crawlers.
 
-= Does this work on multisite subdirectory installs? =
+= Do I need an AI provider? =
 
-Yes. The endpoint is handled per-site and supports subsite paths such as /subsite14/llms.md.
+Yes. The plugin generates the summary using WordPress's AI connectors, so you need at least one AI provider configured. Without one, `/llms.md` returns a "not ready yet" response.
 
-= Can I choose the AI provider? =
+= Why do I see an error (HTTP 503) at /llms.md? =
 
-Yes. Use the llms_md_provider_id filter, or llms_md_model_id if it maps to a registered connector.
+It means the file isn't ready — usually because no AI provider is configured yet, or the first summary hasn't been generated. Configure a provider, then click **Regenerate llms.md** under **Settings > llms.md**.
 
-== Development Tests ==
+= Does this slow down my site? =
 
-For local and CI defaults, use mocked unit tests:
+No. The summary is generated in the background and cached, so visitors and AI tools are served a stored copy. The AI is not called on every request.
 
-* composer test
+= How often does it update? =
 
-Run WordPress integration tests only when a WordPress test database/environment is available:
+Automatically when you publish or edit public content, plus a daily safety refresh. You can also rebuild manually at any time.
 
-* composer test:wp
+= Does it work on multisite? =
+
+Yes. Each site gets its own `/llms.md`, including subdirectory installs (for example `/subsite/llms.md`).
+
+= Can I choose the AI provider or customize the output? =
+
+Yes. Developers can select the provider and customize how the document is generated. See `docs/DEVELOPER.md` in the plugin.
 
 == Changelog ==
 
