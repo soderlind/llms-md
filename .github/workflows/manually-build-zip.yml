@@ -53,8 +53,6 @@ jobs:
             --exclude='phpunit.xml.dist' \
             --exclude='phpunit.unit.xml.dist' \
             --exclude='.phpunit.result.cache' \
-            --exclude='composer.json' \
-            --exclude='composer.lock' \
             --exclude='vendor/bin' \
             --exclude='CONTEXT.md' \
             --exclude='docs' \

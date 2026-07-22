@@ -18,8 +18,8 @@ phpunit.unit.xml.dist
 coverage/
 
 # Composer (dev-only tooling)
-composer.json
-composer.lock
+# Note: composer.json is intentionally kept because vendor/ is bundled
+# (Plugin Check flags a bundled vendor/ without a composer.json).
 composer.phar
 vendor/bin/
 
