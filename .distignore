@@ -3,6 +3,7 @@
 .github/
 .gitignore
 .distignore
+.wordpress-org/
 
 # Editor / OS
 .DS_Store

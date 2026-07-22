@@ -50,4 +50,4 @@ best practices include:
 ## Further Reading
 
 - [llms.txt Specification](https://llmstxt.org/) – Related `llms.txt` initiative.
-- [WordPress AI Connectors](https://developer.wordpress.org/) – WP Core AI docs.
+- [WordPress AI Connectors](https://developer.wordpress.org/reference/functions/wp_get_connectors/) – WP Core AI connectors API.
