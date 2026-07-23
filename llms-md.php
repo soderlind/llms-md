@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:       llms.md
+ * Plugin Name:       AI Site Context (llms.md)
  * Description:       Serves /llms.md from cached AI-generated site analysis.
  * Version:           1.0.0
  * Requires at least: 7.0

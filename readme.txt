@@ -1,4 +1,4 @@
-=== llms.md ===
+=== AI Site Context (llms.md) ===
 Contributors: PerS
 Tags: llms, markdown, seo, discovery, connector
 Requires at least: 7.0
