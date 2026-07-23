@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-final class LLMS_MD_Plugin_Test extends WP_UnitTestCase {
+final class LLMSMD_Plugin_Test extends WP_UnitTestCase {
     public function test_rewrite_rule_registered_for_llms_md(): void {
         do_action('init');
 
@@ -11,20 +11,20 @@ final class LLMS_MD_Plugin_Test extends WP_UnitTestCase {
 
         $this->assertIsArray($rules);
         $this->assertArrayHasKey('llms\\.md$', $rules);
-        $this->assertSame('index.php?llms_md=1', $rules['llms\\.md$']);
+        $this->assertSame('index.php?llmsmd=1', $rules['llms\\.md$']);
     }
 
     public function test_query_var_is_registered(): void {
         do_action('init');
 
         $query_vars = apply_filters('query_vars', []);
-        $this->assertContains('llms_md', $query_vars, 'Expected llms_md query var to be registered.');
+        $this->assertContains('llmsmd', $query_vars, 'Expected llmsmd query var to be registered.');
     }
 
     public function test_connector_gate_filter_can_force_missing_connector_state(): void {
-        add_filter('llms_md_ai_connector_configured', '__return_false');
+        add_filter('llmsmd_ai_connector_configured', '__return_false');
 
-        $plugin = new ReflectionClass('LLMS_MD_Plugin');
+        $plugin = new ReflectionClass('LLMSMD_Plugin');
         $method = $plugin->getMethod('is_connector_configured');
         $method->setAccessible(true);
 
@@ -34,7 +34,7 @@ final class LLMS_MD_Plugin_Test extends WP_UnitTestCase {
 
         $this->assertFalse($method->invoke($instance));
 
-        remove_filter('llms_md_ai_connector_configured', '__return_false');
+        remove_filter('llmsmd_ai_connector_configured', '__return_false');
     }
 
     public function test_preview_payload_admin_action_updates_option_and_redirects(): void {
@@ -42,33 +42,33 @@ final class LLMS_MD_Plugin_Test extends WP_UnitTestCase {
         wp_set_current_user($admin_id);
 
         $captured_redirect = '';
-        add_filter('llms_md_exit_after_redirect', '__return_false');
+        add_filter('llmsmd_exit_after_redirect', '__return_false');
         $redirect_filter = static function (string $location) use (&$captured_redirect): string {
             $captured_redirect = $location;
             return $location;
         };
         add_filter('wp_redirect', $redirect_filter);
 
-        $_REQUEST['_wpnonce'] = wp_create_nonce('llms_md_preview_payload');
+        $_REQUEST['_wpnonce'] = wp_create_nonce('llmsmd_preview_payload');
 
-        do_action('admin_post_llms_md_preview_payload');
+        do_action('admin_post_llmsmd_preview_payload');
 
-        $preview = get_option('llms_md_admin_payload_preview', '');
+        $preview = get_option('llmsmd_admin_payload_preview', '');
         $this->assertIsString($preview);
         $this->assertNotSame('', $preview);
 
         $preview_decoded = json_decode($preview, true);
         $this->assertIsArray($preview_decoded);
         $this->assertArrayHasKey('items_count', $preview_decoded);
-        $this->assertStringContainsString('llms_md_notice=preview_ready', $captured_redirect);
+        $this->assertStringContainsString('llmsmd_notice=preview_ready', $captured_redirect);
 
         unset($_REQUEST['_wpnonce']);
-        remove_filter('llms_md_exit_after_redirect', '__return_false');
+        remove_filter('llmsmd_exit_after_redirect', '__return_false');
         remove_filter('wp_redirect', $redirect_filter);
     }
 
     public function test_request_uri_matcher_accepts_subdirectory_multisite_double_slash_path(): void {
-        $plugin_ref = new ReflectionClass('LLMS_MD_Plugin');
+        $plugin_ref = new ReflectionClass('LLMSMD_Plugin');
         $method = $plugin_ref->getMethod('request_uri_matches_llms_md');
         $method->setAccessible(true);
 
@@ -94,7 +94,7 @@ final class LLMS_MD_Plugin_Test extends WP_UnitTestCase {
     }
 
     public function test_parse_request_early_hook_is_registered(): void {
-        $plugin_ref = new ReflectionClass('LLMS_MD_Plugin');
+        $plugin_ref = new ReflectionClass('LLMSMD_Plugin');
         $instance_property = $plugin_ref->getProperty('instance');
         $instance_property->setAccessible(true);
         $instance = $instance_property->getValue();

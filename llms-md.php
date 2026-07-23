@@ -17,30 +17,30 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$llms_md_autoload = __DIR__ . '/vendor/autoload.php';
-if (is_readable($llms_md_autoload)) {
-    require_once $llms_md_autoload;
+$llmsmd_autoload = __DIR__ . '/vendor/autoload.php';
+if (is_readable($llmsmd_autoload)) {
+    require_once $llmsmd_autoload;
 }
 
-$llms_md_as = __DIR__ . '/vendor/woocommerce/action-scheduler/action-scheduler.php';
-if (is_readable($llms_md_as)) {
-    require_once $llms_md_as;
+$llmsmd_as = __DIR__ . '/vendor/woocommerce/action-scheduler/action-scheduler.php';
+if (is_readable($llmsmd_as)) {
+    require_once $llmsmd_as;
 }
 
-final class LLMS_MD_Plugin {
+final class LLMSMD_Plugin {
     private const VERSION = '1.0.0';
-    private const QUERY_VAR = 'llms_md';
+    private const QUERY_VAR = 'llmsmd';
     private const REWRITE_RULE = '^llms\\.md$';
 
-    private const OPTION_SNAPSHOT = 'llms_md_snapshot';
-    private const OPTION_STATE = 'llms_md_state';
-    private const OPTION_LOCK = 'llms_md_regeneration_lock';
-    private const OPTION_PENDING = 'llms_md_regeneration_pending';
-    private const OPTION_ADMIN_PREVIEW = 'llms_md_admin_payload_preview';
+    private const OPTION_SNAPSHOT = 'llmsmd_snapshot';
+    private const OPTION_STATE = 'llmsmd_state';
+    private const OPTION_LOCK = 'llmsmd_regeneration_lock';
+    private const OPTION_PENDING = 'llmsmd_regeneration_pending';
+    private const OPTION_ADMIN_PREVIEW = 'llmsmd_admin_payload_preview';
 
-    private const CRON_DAILY = 'llms_md_daily_rebuild';
-    private const CRON_RUN = 'llms_md_run_regeneration';
-    private const AS_GROUP = 'llms-md';
+    private const CRON_DAILY = 'llmsmd_daily_rebuild';
+    private const CRON_RUN = 'llmsmd_run_regeneration';
+    private const AS_GROUP = 'llmsmd';
 
     private const SUCCESS_MAX_AGE = 300;
     private const STALE_FAILURE_MAX_AGE = 604800; // 7 days
@@ -50,7 +50,9 @@ final class LLMS_MD_Plugin {
     private const PROMPT_VERSION = 'v1';
     private const DEFAULT_MODEL_ID = 'wp-core-ai-default';
 
-    private static ?LLMS_MD_Plugin $instance = null;
+    private string $admin_hook_suffix = '';
+
+    private static ?LLMSMD_Plugin $instance = null;
 
     public static function init(): void {
         if (self::$instance instanceof self) {
@@ -90,11 +92,12 @@ final class LLMS_MD_Plugin {
         add_action(self::CRON_RUN, [$this, 'run_regeneration'], 10, 1);
 
         add_action('admin_menu', [$this, 'register_admin_page']);
-        add_action('admin_post_llms_md_manual_regenerate', [$this, 'handle_manual_regenerate']);
-        add_action('admin_post_llms_md_check_connector', [$this, 'handle_check_connector']);
-        add_action('admin_post_llms_md_preview_payload', [$this, 'handle_preview_payload']);
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
+        add_action('admin_post_llmsmd_manual_regenerate', [$this, 'handle_manual_regenerate']);
+        add_action('admin_post_llmsmd_check_connector', [$this, 'handle_check_connector']);
+        add_action('admin_post_llmsmd_preview_payload', [$this, 'handle_preview_payload']);
         add_action('admin_notices', [$this, 'maybe_show_admin_notices']);
-        add_action('wp_ajax_llms_md_poll_status', [$this, 'handle_poll_status']);
+        add_action('wp_ajax_llmsmd_poll_status', [$this, 'handle_poll_status']);
 
         if (!$this->has_any_scheduled(self::CRON_DAILY)) {
             $this->schedule_daily_rebuild();
@@ -340,13 +343,45 @@ final class LLMS_MD_Plugin {
     }
 
     public function register_admin_page(): void {
-        add_options_page(
+        $this->admin_hook_suffix = (string) add_options_page(
             'llms.md',
             'llms.md',
             'manage_options',
             'llms-md',
             [$this, 'render_admin_page']
         );
+    }
+
+    public function enqueue_admin_assets($hook_suffix): void {
+        if ((string) $hook_suffix !== $this->admin_hook_suffix || $this->admin_hook_suffix === '') {
+            return;
+        }
+
+        $base_url = plugin_dir_url(__FILE__);
+
+        wp_enqueue_style(
+            'llmsmd-admin',
+            $base_url . 'assets/admin.css',
+            [],
+            self::VERSION
+        );
+
+        wp_enqueue_script(
+            'llmsmd-admin',
+            $base_url . 'assets/admin.js',
+            [],
+            self::VERSION,
+            true
+        );
+
+        $preview = get_option(self::OPTION_ADMIN_PREVIEW, '');
+        if (is_string($preview) && $preview !== '') {
+            wp_add_inline_script(
+                'llmsmd-admin',
+                'window.llmsmdPreviewData = ' . wp_json_encode($preview) . ';',
+                'before'
+            );
+        }
     }
 
     public function render_admin_page(): void {
@@ -381,33 +416,17 @@ final class LLMS_MD_Plugin {
         echo '</table>';
 
         echo '<form id="llms-md-regen-form" method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="margin-top: 16px">';
-        wp_nonce_field('llms_md_manual_regenerate');
-        echo '<input type="hidden" name="action" value="llms_md_manual_regenerate" />';
+        wp_nonce_field('llmsmd_manual_regenerate');
+        echo '<input type="hidden" name="action" value="llmsmd_manual_regenerate" />';
         submit_button(__('Regenerate llms.md', 'llms-md'), 'primary', 'submit', false);
         echo '</form>';
         ?>
         <div id="llms-md-progress-wrap" style="display:none;margin-top:12px;max-width:900px">
             <p id="llms-md-progress-label" style="margin-bottom:6px"><?php esc_html_e('Regenerating llms.md…', 'llms-md'); ?></p>
             <div style="background:#ddd;border-radius:3px;height:20px;overflow:hidden;position:relative">
-                <div id="llms-md-progress-bar" style="
-                    position:absolute;height:100%;width:40%;
-                    background:#2271b1;border-radius:3px;
-                    animation:llms-md-slide 1.4s ease-in-out infinite;
-                "></div>
+                <div id="llms-md-progress-bar" style="position:absolute;height:100%;width:40%;background:#2271b1;border-radius:3px"></div>
             </div>
         </div>
-        <style>
-        @keyframes llms-md-slide {
-            0%   { left:-40%; }
-            100% { left:100%; }
-        }
-        </style>
-        <script>
-        document.getElementById('llms-md-regen-form').addEventListener('submit', function () {
-            document.getElementById('llms-md-progress-wrap').style.display = 'block';
-            this.querySelector('[type=submit]').disabled = true;
-        });
-        </script>
         <?php
 
         echo '<hr style="margin: 24px 0" />';
@@ -415,14 +434,14 @@ final class LLMS_MD_Plugin {
         echo '<p>' . esc_html__('Run connector checks and preview the bounded analysis payload used for generation.', 'llms-md') . '</p>';
 
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="display: inline-block; margin-right: 8px">';
-        wp_nonce_field('llms_md_check_connector');
-        echo '<input type="hidden" name="action" value="llms_md_check_connector" />';
+        wp_nonce_field('llmsmd_check_connector');
+        echo '<input type="hidden" name="action" value="llmsmd_check_connector" />';
         submit_button(__('Check Connector', 'llms-md'), 'secondary', 'submit', false);
         echo '</form>';
 
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" style="display: inline-block">';
-        wp_nonce_field('llms_md_preview_payload');
-        echo '<input type="hidden" name="action" value="llms_md_preview_payload" />';
+        wp_nonce_field('llmsmd_preview_payload');
+        echo '<input type="hidden" name="action" value="llmsmd_preview_payload" />';
         submit_button(__('Preview Payload', 'llms-md'), 'secondary', 'submit', false);
         echo '</form>';
 
@@ -435,77 +454,8 @@ final class LLMS_MD_Plugin {
             echo '</div>';
             echo '<div style="padding: 12px 14px">';
             echo '<pre id="llms-md-preview-json" style="margin: 0; white-space: pre; overflow: auto; max-height: 460px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace; font-size: 12px; line-height: 1.5; color: #1d2327; background: #f6f7f7; border: 1px solid #dcdcde; border-radius: 6px; padding: 10px"></pre>';
-            echo '<script>window.llmsMdPreviewRaw = ' . wp_json_encode($preview) . ';</script>';
             echo '</div>';
             echo '</div>';
-            ?>
-            <script>
-            (function () {
-                var closeBtn = document.getElementById('llms-md-preview-close');
-                var panel = document.getElementById('llms-md-preview-panel');
-                var jsonNode = document.getElementById('llms-md-preview-json');
-                if (!closeBtn || !panel) {
-                    return;
-                }
-
-                if (jsonNode) {
-                    var raw = typeof window.llmsMdPreviewRaw === 'string' ? window.llmsMdPreviewRaw : '{}';
-                    var pretty = raw;
-
-                    try {
-                        pretty = JSON.stringify(JSON.parse(raw), null, 2);
-                    } catch (e) {
-                        // Keep raw content if JSON parsing fails unexpectedly.
-                    }
-
-                    jsonNode.innerHTML = highlightJson(pretty);
-                }
-
-                closeBtn.addEventListener('click', function () {
-                    panel.style.display = 'none';
-                });
-
-                closeBtn.addEventListener('mouseenter', function () {
-                    closeBtn.style.color = '#d63638';
-                });
-
-                closeBtn.addEventListener('mouseleave', function () {
-                    closeBtn.style.color = '#50575e';
-                });
-
-                function highlightJson(json) {
-                    var escaped = json
-                        .replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;');
-
-                    return escaped.replace(/("(?:\\u[0-9a-fA-F]{4}|\\[^u]|[^\\\"])*"\s*:?)|(\btrue\b|\bfalse\b|\bnull\b)|(-?\d+(?:\.\d+)?(?:[eE][+\-]?\d+)?)/g, function (match, stringToken, literalToken, numberToken) {
-                        if (stringToken) {
-                            if (/:$/.test(stringToken)) {
-                                return '<span style="color:#9a3412;font-weight:600">' + stringToken + '</span>';
-                            }
-
-                            return '<span style="color:#0f766e">' + stringToken + '</span>';
-                        }
-
-                        if (literalToken) {
-                            if (literalToken === 'null') {
-                                return '<span style="color:#7c3aed">' + literalToken + '</span>';
-                            }
-
-                            return '<span style="color:#1d4ed8">' + literalToken + '</span>';
-                        }
-
-                        if (numberToken) {
-                            return '<span style="color:#b45309">' + numberToken + '</span>';
-                        }
-
-                        return match;
-                    });
-                }
-            }());
-            </script>
-            <?php
         }
 
         echo '</div>';
@@ -516,7 +466,7 @@ final class LLMS_MD_Plugin {
             wp_die(esc_html__('Insufficient permissions.', 'llms-md'), esc_html__('Forbidden', 'llms-md'), ['response' => 403]);
         }
 
-        check_admin_referer('llms_md_manual_regenerate');
+        check_admin_referer('llmsmd_manual_regenerate');
 
         $this->run_regeneration('manual_regenerate');
 
@@ -530,7 +480,7 @@ final class LLMS_MD_Plugin {
             wp_die(esc_html__('Insufficient permissions.', 'llms-md'), esc_html__('Forbidden', 'llms-md'), ['response' => 403]);
         }
 
-        check_admin_referer('llms_md_check_connector');
+        check_admin_referer('llmsmd_check_connector');
 
         $is_configured = $this->is_connector_configured();
         $provider_ids = $this->get_configured_ai_provider_ids();
@@ -552,7 +502,7 @@ final class LLMS_MD_Plugin {
             wp_die(esc_html__('Insufficient permissions.', 'llms-md'), esc_html__('Forbidden', 'llms-md'), ['response' => 403]);
         }
 
-        check_admin_referer('llms_md_preview_payload');
+        check_admin_referer('llmsmd_preview_payload');
 
         $payload = $this->collect_payload();
         $preview = [
@@ -578,7 +528,7 @@ final class LLMS_MD_Plugin {
             wp_send_json_error(esc_html__('Insufficient permissions.', 'llms-md'), 403);
         }
 
-        check_ajax_referer('llms_md_poll_status');
+        check_ajax_referer('llmsmd_poll_status');
 
         $state = $this->get_state();
         wp_send_json_success([
@@ -590,9 +540,9 @@ final class LLMS_MD_Plugin {
     }
 
     private function admin_redirect_with_notice(string $notice): void {
-        wp_safe_redirect(add_query_arg(['page' => 'llms-md', 'llms_md_notice' => $notice], admin_url('options-general.php')));
+        wp_safe_redirect(add_query_arg(['page' => 'llms-md', 'llmsmd_notice' => $notice], admin_url('options-general.php')));
 
-        $should_exit = (bool) apply_filters('llms_md_exit_after_redirect', true);
+        $should_exit = (bool) apply_filters('llmsmd_exit_after_redirect', true);
         if ($should_exit) {
             exit;
         }
@@ -606,7 +556,7 @@ final class LLMS_MD_Plugin {
         // Read-only display notices set via a redirect from nonce-verified admin-post handlers; no state is changed here.
         // phpcs:disable WordPress.Security.NonceVerification.Recommended -- Display-only admin notice, values are sanitized and not used to mutate state.
         $page   = isset($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : '';
-        $notice = isset($_GET['llms_md_notice']) ? sanitize_text_field(wp_unslash($_GET['llms_md_notice'])) : '';
+        $notice = isset($_GET['llmsmd_notice']) ? sanitize_text_field(wp_unslash($_GET['llmsmd_notice'])) : '';
         // phpcs:enable WordPress.Security.NonceVerification.Recommended
 
         if ($page === 'llms-md' && $notice === 'regenerated') {
@@ -931,7 +881,7 @@ final class LLMS_MD_Plugin {
             ],
             'policy' => [
                 'prompt_version' => self::PROMPT_VERSION,
-                'model_id' => (string) apply_filters('llms_md_model_id', self::DEFAULT_MODEL_ID),
+                'model_id' => (string) apply_filters('llmsmd_model_id', self::DEFAULT_MODEL_ID),
                 'determinism' => 'low_variance',
             ],
             'items' => $items,
@@ -947,11 +897,11 @@ final class LLMS_MD_Plugin {
         $context = [
             'reason' => $reason,
             'prompt_version' => self::PROMPT_VERSION,
-            'model_id' => (string) apply_filters('llms_md_model_id', self::DEFAULT_MODEL_ID),
+            'model_id' => (string) apply_filters('llmsmd_model_id', self::DEFAULT_MODEL_ID),
             'provider_id' => $this->resolve_provider_id(),
         ];
 
-        $filtered = apply_filters('llms_md_generate_document', null, $payload, $context);
+        $filtered = apply_filters('llmsmd_generate_document', null, $payload, $context);
         if (is_string($filtered) && trim($filtered) !== '') {
             return [
                 'ok' => true,
@@ -972,7 +922,7 @@ final class LLMS_MD_Plugin {
             'content' => '',
             'model_id' => $context['model_id'],
             'prompt_version' => $context['prompt_version'],
-            'error' => 'Generation failed. Add a llms_md_generate_document filter that uses your WP Core AI connector.',
+            'error' => 'Generation failed. Add a llmsmd_generate_document filter that uses your WP Core AI connector.',
         ];
     }
 
@@ -1070,7 +1020,7 @@ final class LLMS_MD_Plugin {
     }
 
     private function is_connector_configured(): bool {
-        $filtered = apply_filters('llms_md_ai_connector_configured', null);
+        $filtered = apply_filters('llmsmd_ai_connector_configured', null);
         if (is_bool($filtered)) {
             return $filtered;
         }
@@ -1079,12 +1029,12 @@ final class LLMS_MD_Plugin {
     }
 
     private function resolve_provider_id(): string {
-        $provider = (string) apply_filters('llms_md_provider_id', '');
+        $provider = (string) apply_filters('llmsmd_provider_id', '');
         if ($provider !== '') {
             return $provider;
         }
 
-        $model_id = (string) apply_filters('llms_md_model_id', self::DEFAULT_MODEL_ID);
+        $model_id = (string) apply_filters('llmsmd_model_id', self::DEFAULT_MODEL_ID);
         if ($model_id !== '' && $model_id !== self::DEFAULT_MODEL_ID && function_exists('wp_is_connector_registered') && wp_is_connector_registered($model_id)) {
             return $model_id;
         }
@@ -1150,13 +1100,10 @@ final class LLMS_MD_Plugin {
                 if ($source !== 'none') {
                     $provider_ids[] = (string) $connector_id;
                 }
-                continue;
             }
 
-            $db_value = get_option($setting_name, '');
-            if (is_string($db_value) && $db_value !== '') {
-                $provider_ids[] = (string) $connector_id;
-            }
+            // Without the Core AI helper we intentionally do not read the
+            // connector's API key option directly to check for its presence.
         }
 
         return array_values(array_unique(array_filter($provider_ids, static fn(string $id): bool => $id !== '')));
@@ -1282,8 +1229,8 @@ final class LLMS_MD_Plugin {
     }
 }
 
-if (!defined('LLMS_MD_DISABLE_BOOTSTRAP') || !LLMS_MD_DISABLE_BOOTSTRAP) {
-    LLMS_MD_Plugin::init();
-    register_activation_hook(__FILE__, ['LLMS_MD_Plugin', 'activate']);
-    register_deactivation_hook(__FILE__, ['LLMS_MD_Plugin', 'deactivate']);
+if (!defined('LLMSMD_DISABLE_BOOTSTRAP') || !LLMSMD_DISABLE_BOOTSTRAP) {
+    LLMSMD_Plugin::init();
+    register_activation_hook(__FILE__, ['LLMSMD_Plugin', 'activate']);
+    register_deactivation_hook(__FILE__, ['LLMSMD_Plugin', 'deactivate']);
 }

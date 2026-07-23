@@ -22,11 +22,11 @@ The plugin supports two integration paths:
 
 ### Connector availability filter
 
-`llms_md_ai_connector_configured` — return a boolean to declare whether a usable AI
+`llmsmd_ai_connector_configured` — return a boolean to declare whether a usable AI
 connector exists. Return `null` (the default) to let the plugin decide.
 
 ```php
-add_filter('llms_md_ai_connector_configured', function ($configured) {
+add_filter('llmsmd_ai_connector_configured', function ($configured) {
     if (is_bool($configured)) {
         return $configured;
     }
@@ -53,11 +53,11 @@ add_filter('llms_md_ai_connector_configured', function ($configured) {
 
 ### Generation filter
 
-`llms_md_generate_document` — return a non-empty Markdown string to supply or
+`llmsmd_generate_document` — return a non-empty Markdown string to supply or
 override the generated document.
 
 ```php
-add_filter('llms_md_generate_document', function ($document, array $payload, array $context) {
+add_filter('llmsmd_generate_document', function ($document, array $payload, array $context) {
     if (is_string($document) && trim($document) !== '') {
         return $document;
     }
@@ -81,23 +81,23 @@ add_filter('llms_md_generate_document', function ($document, array $payload, arr
 
 ## Provider selection
 
-- If the `llms_md_provider_id` filter returns a non-empty provider ID, that provider is used.
-- Else, if `llms_md_model_id` maps to a registered connector ID, that provider is used.
+- If the `llmsmd_provider_id` filter returns a non-empty provider ID, that provider is used.
+- Else, if `llmsmd_model_id` maps to a registered connector ID, that provider is used.
 - Else, the first configured AI provider connector is selected automatically.
 
 ## Hooks reference
 
 Filters:
 
-- `llms_md_ai_connector_configured` (mixed) — override connector detection.
-- `llms_md_generate_document` (`$document`, `array $payload`, `array $context`) — supply or override the generated Markdown.
-- `llms_md_provider_id` (string) — force a specific provider ID.
-- `llms_md_model_id` (string) — map a model ID to a registered connector.
-- `llms_md_exit_after_redirect` (bool) — control `exit()` after admin redirects (useful in tests).
+- `llmsmd_ai_connector_configured` (mixed) — override connector detection.
+- `llmsmd_generate_document` (`$document`, `array $payload`, `array $context`) — supply or override the generated Markdown.
+- `llmsmd_provider_id` (string) — force a specific provider ID.
+- `llmsmd_model_id` (string) — map a model ID to a registered connector.
+- `llmsmd_exit_after_redirect` (bool) — control `exit()` after admin redirects (useful in tests).
 
 Constants:
 
-- `LLMS_MD_DISABLE_BOOTSTRAP` — when `true`, prevents the plugin from bootstrapping (used by unit tests).
+- `LLMSMD_DISABLE_BOOTSTRAP` — when `true`, prevents the plugin from bootstrapping (used by unit tests).
 
 ## HTTP response
 
