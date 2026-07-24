@@ -6,7 +6,7 @@ use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\TestCase;
 
-final class LLMSMD_Request_URIMatcher_Test extends TestCase {
+final class AISCTX_Request_URIMatcher_Test extends TestCase {
     protected function setUp(): void {
         parent::setUp();
         Monkey\setUp();
@@ -34,7 +34,7 @@ final class LLMSMD_Request_URIMatcher_Test extends TestCase {
     }
 
     public function test_matches_subsite_llms_md_path(): void {
-        $instance = new LLMSMD_Plugin();
+        $instance = new AISCTX_Plugin();
         $method = new ReflectionMethod($instance, 'request_uri_matches_llms_md');
         $method->setAccessible(true);
 
@@ -42,7 +42,7 @@ final class LLMSMD_Request_URIMatcher_Test extends TestCase {
     }
 
     public function test_matches_subsite_double_slash_llms_md_path(): void {
-        $instance = new LLMSMD_Plugin();
+        $instance = new AISCTX_Plugin();
         $method = new ReflectionMethod($instance, 'request_uri_matches_llms_md');
         $method->setAccessible(true);
 
@@ -50,7 +50,7 @@ final class LLMSMD_Request_URIMatcher_Test extends TestCase {
     }
 
     public function test_does_not_match_non_llms_paths(): void {
-        $instance = new LLMSMD_Plugin();
+        $instance = new AISCTX_Plugin();
         $method = new ReflectionMethod($instance, 'request_uri_matches_llms_md');
         $method->setAccessible(true);
 

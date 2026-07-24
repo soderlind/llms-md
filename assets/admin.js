@@ -20,11 +20,11 @@
 	var panel = document.getElementById( 'llms-md-preview-panel' );
 	var jsonNode = document.getElementById( 'llms-md-preview-json' );
 
-	if ( jsonNode && typeof window.llmsmdPreviewData === 'string' ) {
-		var pretty = window.llmsmdPreviewData;
+	if ( jsonNode && typeof window.aisctxPreviewData === 'string' ) {
+		var pretty = window.aisctxPreviewData;
 
 		try {
-			pretty = JSON.stringify( JSON.parse( window.llmsmdPreviewData ), null, 2 );
+			pretty = JSON.stringify( JSON.parse( window.aisctxPreviewData ), null, 2 );
 		} catch ( e ) {
 			// Keep raw content if JSON parsing fails unexpectedly.
 		}
@@ -57,22 +57,22 @@
 			function ( match, stringToken, literalToken, numberToken ) {
 				if ( stringToken ) {
 					if ( /:$/.test( stringToken ) ) {
-						return '<span class="llmsmd-json-key">' + stringToken + '</span>';
+						return '<span class="aisctx-json-key">' + stringToken + '</span>';
 					}
 
-					return '<span class="llmsmd-json-string">' + stringToken + '</span>';
+					return '<span class="aisctx-json-string">' + stringToken + '</span>';
 				}
 
 				if ( literalToken ) {
 					if ( literalToken === 'null' ) {
-						return '<span class="llmsmd-json-null">' + literalToken + '</span>';
+						return '<span class="aisctx-json-null">' + literalToken + '</span>';
 					}
 
-					return '<span class="llmsmd-json-bool">' + literalToken + '</span>';
+					return '<span class="aisctx-json-bool">' + literalToken + '</span>';
 				}
 
 				if ( numberToken ) {
-					return '<span class="llmsmd-json-number">' + numberToken + '</span>';
+					return '<span class="aisctx-json-number">' + numberToken + '</span>';
 				}
 
 				return match;

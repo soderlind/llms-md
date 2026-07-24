@@ -6,8 +6,8 @@ if (!defined('ABSPATH')) {
     define('ABSPATH', '/');
 }
 
-if (!defined('LLMSMD_DISABLE_BOOTSTRAP')) {
-    define('LLMSMD_DISABLE_BOOTSTRAP', true);
+if (!defined('AISCTX_DISABLE_BOOTSTRAP')) {
+    define('AISCTX_DISABLE_BOOTSTRAP', true);
 }
 
 if (!function_exists('apply_filters')) {
