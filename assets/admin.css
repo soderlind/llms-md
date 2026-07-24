@@ -1,4 +1,4 @@
-@keyframes llmsmd-slide {
+@keyframes aisctx-slide {
 	0% {
 		left: -40%;
 	}
@@ -9,26 +9,26 @@
 }
 
 #llms-md-progress-bar {
-	animation: llmsmd-slide 1.4s ease-in-out infinite;
+	animation: aisctx-slide 1.4s ease-in-out infinite;
 }
 
-.llmsmd-json-key {
+.aisctx-json-key {
 	color: #9a3412;
 	font-weight: 600;
 }
 
-.llmsmd-json-string {
+.aisctx-json-string {
 	color: #0f766e;
 }
 
-.llmsmd-json-bool {
+.aisctx-json-bool {
 	color: #1d4ed8;
 }
 
-.llmsmd-json-null {
+.aisctx-json-null {
 	color: #7c3aed;
 }
 
-.llmsmd-json-number {
+.aisctx-json-number {
 	color: #b45309;
 }
